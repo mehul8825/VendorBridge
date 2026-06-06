@@ -3,6 +3,13 @@ import Sidebar from './components/Sidebar';
 import Auth from './pages/Auth';
 import Onboarding from './pages/Onboarding';
 import VendorManagement from './pages/VendorManagement';
+import Dashboard from './pages/Dashboard';
+import RFQs from './pages/RFQs';
+import BidComparison from './pages/BidComparison';
+import Approvals from './pages/Approvals';
+import PurchaseOrders from './pages/PurchaseOrders';
+import Invoices from './pages/Invoices';
+import LogsReports from './pages/LogsReports';
 import { api } from './services/api';
 import { Bell, Sun, Moon, Lock } from 'lucide-react';
 
@@ -13,6 +20,7 @@ export default function App() {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [vendorProfileApproved, setVendorProfileApproved] = useState(true);
   const [checkingProfile, setCheckingProfile] = useState(false);
+  const [comparisonRfqId, setComparisonRfqId] = useState(null);
 
   // Notifications
   const [notifications, setNotifications] = useState([]);
@@ -143,53 +151,48 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div>
-              <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-heading)' }}>Welcome back, {user.name}</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Monitor ERP procurement pipelines, transactions, and status boards.</p>
-            </div>
-            
-            <div className="glass-panel" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-heading)' }}>ERP Step 2 Active Workspaces</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem' }}>
-                You have successfully unlocked the **Vendor Management & Onboarding** module. 
-              </p>
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                {user.role === 'vendor' ? (
-                  vendorProfileApproved ? (
-                    <div style={{ color: 'var(--success)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      ✓ Your Vendor Profile is Active and Approved
-                    </div>
-                  ) : (
-                    <button onClick={() => setActiveTab('onboarding')} className="btn btn-primary">
-                      Start Multi-Step Onboarding Form
-                    </button>
-                  )
-                ) : (
-                  <button onClick={() => setActiveTab('vendors')} className="btn btn-primary">
-                    Open Vendor Registry Table
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          <Dashboard 
+            user={user} 
+            setActiveTab={setActiveTab} 
+            setComparisonRfqId={setComparisonRfqId} 
+          />
         );
       case 'onboarding':
         return <Onboarding user={user} onProfileUpdated={() => { fetchNotifications(); checkVendorProfileStatus(); }} />;
       case 'vendors':
         return <VendorManagement user={user} />;
       case 'rfqs':
-        return renderPlaceholder('RFQs & Bids Board', 3);
+        return (
+          <RFQs 
+            user={user} 
+            setActiveTab={setActiveTab} 
+            setComparisonRfqId={setComparisonRfqId} 
+          />
+        );
+      case 'compare':
+        return (
+          <BidComparison 
+            user={user} 
+            rfqId={comparisonRfqId} 
+            setActiveTab={setActiveTab} 
+          />
+        );
       case 'approvals':
-        return renderPlaceholder('Workflow approvals', 4);
+        return <Approvals user={user} />;
       case 'pos':
-        return renderPlaceholder('Purchase Orders', 5);
+        return <PurchaseOrders user={user} />;
       case 'invoices':
-        return renderPlaceholder('Invoicing & Billing', 5);
+        return <Invoices user={user} />;
       case 'logs':
-        return renderPlaceholder('Audit logs spreadsheet', 6);
+        return <LogsReports user={user} />;
       default:
-        return <Onboarding user={user} onProfileUpdated={() => { fetchNotifications(); checkVendorProfileStatus(); }} />;
+        return (
+          <Dashboard 
+            user={user} 
+            setActiveTab={setActiveTab} 
+            setComparisonRfqId={setComparisonRfqId} 
+          />
+        );
     }
   };
 
