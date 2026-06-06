@@ -105,7 +105,7 @@ export default function Onboarding({ user, onProfileUpdated }) {
     );
   }
 
-  if (profile && profile.status === 'pending') {
+  if (profile && profile.status === 'pending' && profile.gstNumber !== 'Pending') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '600px', margin: '2rem auto' }}>
         <div className="glass-panel" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>

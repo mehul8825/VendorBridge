@@ -11,7 +11,7 @@ import {
   UserCheck
 } from 'lucide-react';
 
-export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
+export default function Sidebar({ user, activeTab, setActiveTab, onLogout, vendorProfileApproved = true }) {
   const role = user?.role || 'vendor';
 
   const menuItems = [
@@ -48,12 +48,23 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
         {filteredItems.map(item => {
           const Icon = item.icon;
           const isActive = activeTab === item.id || (item.id === 'rfqs' && activeTab === 'compare');
+          const isRestricted = role === 'vendor' && !vendorProfileApproved && item.id !== 'onboarding';
+          
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => { if (!isRestricted) setActiveTab(item.id); }}
               className={`sidebar-link btn-secondary btn ${isActive ? 'active' : ''}`}
-              style={{ justifyContent: 'flex-start', border: 'none', background: 'transparent', width: '100%' }}
+              style={{ 
+                justifyContent: 'flex-start', 
+                border: 'none', 
+                background: 'transparent', 
+                width: '100%',
+                opacity: isRestricted ? 0.4 : 1,
+                cursor: isRestricted ? 'not-allowed' : 'pointer'
+              }}
+              title={isRestricted ? "Onboarding approval required" : ""}
+              disabled={isRestricted}
             >
               <Icon size={18} />
               <span>{item.label}</span>

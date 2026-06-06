@@ -11,21 +11,49 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [vendorProfileApproved, setVendorProfileApproved] = useState(true);
+  const [checkingProfile, setCheckingProfile] = useState(false);
 
   // Notifications
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const checkVendorProfileStatus = async (currentUser) => {
+    const u = currentUser || user;
+    if (!u || u.role !== 'vendor') {
+      setVendorProfileApproved(true);
+      return;
+    }
+    setCheckingProfile(true);
+    try {
+      const profile = await api.get('/vendors/profile');
+      if (profile && profile.status === 'approved') {
+        setVendorProfileApproved(true);
+      } else {
+        setVendorProfileApproved(false);
+        setActiveTab('onboarding');
+      }
+    } catch (err) {
+      setVendorProfileApproved(false);
+      setActiveTab('onboarding');
+    } finally {
+      setCheckingProfile(false);
+    }
+  };
+
   const checkAuth = () => {
     const token = localStorage.getItem('vb_token');
     const userData = localStorage.getItem('vb_user');
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
       setIsAuthenticated(true);
+      checkVendorProfileStatus(parsedUser);
     } else {
       setUser(null);
       setIsAuthenticated(false);
+      setVendorProfileApproved(true);
     }
   };
 
@@ -70,6 +98,8 @@ export default function App() {
     localStorage.removeItem('vb_user');
     setIsAuthenticated(false);
     setUser(null);
+    setVendorProfileApproved(true);
+    setCheckingProfile(false);
     setActiveTab('dashboard');
   };
 
@@ -102,6 +132,14 @@ export default function App() {
   );
 
   const renderContent = () => {
+    if (checkingProfile) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '200px' }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Verifying workspace profile...</div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return (
@@ -118,9 +156,15 @@ export default function App() {
               </p>
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 {user.role === 'vendor' ? (
-                  <button onClick={() => setActiveTab('onboarding')} className="btn btn-primary">
-                    Start Multi-Step Onboarding Form
-                  </button>
+                  vendorProfileApproved ? (
+                    <div style={{ color: 'var(--success)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      ✓ Your Vendor Profile is Active and Approved
+                    </div>
+                  ) : (
+                    <button onClick={() => setActiveTab('onboarding')} className="btn btn-primary">
+                      Start Multi-Step Onboarding Form
+                    </button>
+                  )
                 ) : (
                   <button onClick={() => setActiveTab('vendors')} className="btn btn-primary">
                     Open Vendor Registry Table
@@ -131,7 +175,7 @@ export default function App() {
           </div>
         );
       case 'onboarding':
-        return <Onboarding user={user} onProfileUpdated={fetchNotifications} />;
+        return <Onboarding user={user} onProfileUpdated={() => { fetchNotifications(); checkVendorProfileStatus(); }} />;
       case 'vendors':
         return <VendorManagement user={user} />;
       case 'rfqs':
@@ -145,7 +189,7 @@ export default function App() {
       case 'logs':
         return renderPlaceholder('Audit logs spreadsheet', 6);
       default:
-        return <Onboarding user={user} />;
+        return <Onboarding user={user} onProfileUpdated={() => { fetchNotifications(); checkVendorProfileStatus(); }} />;
     }
   };
 
@@ -157,6 +201,7 @@ export default function App() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         onLogout={handleLogout} 
+        vendorProfileApproved={vendorProfileApproved}
       />
 
       {/* Main Panel */}
