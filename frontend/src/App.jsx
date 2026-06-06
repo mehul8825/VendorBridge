@@ -11,7 +11,19 @@ import PurchaseOrders from './pages/PurchaseOrders';
 import Invoices from './pages/Invoices';
 import LogsReports from './pages/LogsReports';
 import { api } from './services/api';
-import { Bell, Sun, Moon, Lock } from 'lucide-react';
+import { Bell, Sun, Moon, User } from 'lucide-react';
+
+const TAB_META = {
+  dashboard:  { title: 'Dashboard Overview',       subtitle: 'Real-time procurement metrics and KPIs',      step: null },
+  onboarding: { title: 'Vendor Onboarding',         subtitle: 'Complete company profile and await approval',  step: null },
+  vendors:    { title: 'Vendor Registry',            subtitle: 'Step 1 — Manage approved vendor profiles',    step: 1 },
+  rfqs:       { title: 'RFQ & Bid Workspace',        subtitle: 'Step 2 & 3 — Create RFQs and collect vendor quotations', step: 2 },
+  compare:    { title: 'Bid Evaluation Matrix',      subtitle: 'Step 4 — Side-by-side quotation comparison',  step: 4 },
+  approvals:  { title: 'Approval Workflow',          subtitle: 'Step 5 — Manager review and sign-off',         step: 5 },
+  pos:        { title: 'Purchase Orders',            subtitle: 'Step 6 & 7 — Generate POs and send to vendor', step: 6 },
+  invoices:   { title: 'Invoices & Billing',         subtitle: 'Step 8 & 9 — Generate, approve, and email invoices', step: 8 },
+  logs:       { title: 'Reports & Analytics',        subtitle: 'Step 10 & 11 — Audit trail and spend reports', step: 10 },
+};
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -127,17 +139,7 @@ export default function App() {
     return <Auth onLoginSuccess={checkAuth} />;
   }
 
-  const renderPlaceholder = (moduleName, nextStepNumber) => (
-    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', textAlign: 'center', height: '100%' }}>
-      <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-glow)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Lock size={30} />
-      </div>
-      <h3 style={{ fontFamily: 'var(--font-heading)' }}>{moduleName} Module Locked</h3>
-      <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', fontSize: '0.9rem' }}>
-        This feature will be unlocked in **Step {nextStepNumber}** of the Procurement ERP rollout roadmap.
-      </p>
-    </div>
-  );
+  // placeholder no longer needed — all modules are active
 
   const renderContent = () => {
     if (checkingProfile) {
@@ -211,22 +213,21 @@ export default function App() {
       <main className="main-content">
         {/* Top Header Bar */}
         <div className="top-bar">
-          <h2 style={{ fontSize: '1.15rem', fontWeight: '600', color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
-            {(() => {
-              switch (activeTab) {
-                case 'dashboard': return 'Dashboard Overview';
-                case 'onboarding': return 'Vendor Onboarding';
-                case 'vendors': return 'Vendor Registry';
-                case 'rfqs': return 'Requests for Quotations (Locked)';
-                case 'compare': return 'Bid Evaluation Board (Locked)';
-                case 'approvals': return 'Workflow Sign-offs (Locked)';
-                case 'pos': return 'Purchase Orders (Locked)';
-                case 'invoices': return 'Invoicing & Payments (Locked)';
-                case 'logs': return 'Audit Logs & Analytics (Locked)';
-                default: return 'VendorBridge ERP';
-              }
-            })()}
-          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {TAB_META[activeTab]?.step && (
+                <span style={{ fontSize: '0.62rem', fontWeight: '800', padding: '2px 7px', borderRadius: '4px', background: 'rgba(99,102,241,0.1)', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Step {TAB_META[activeTab].step}
+                </span>
+              )}
+              <h2 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', fontFamily: 'var(--font-heading)', margin: 0 }}>
+                {TAB_META[activeTab]?.title || 'VendorBridge ERP'}
+              </h2>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+              {TAB_META[activeTab]?.subtitle || 'Procurement & Vendor Management ERP'}
+            </p>
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             {/* Light/Dark Toggle */}
