@@ -6,6 +6,8 @@ export default function Approvals({ user }) {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(30); // 30 seconds
 
   // Sign off Modal
   const [selectedApproval, setSelectedApproval] = useState(null);
@@ -27,6 +29,17 @@ export default function Approvals({ user }) {
   useEffect(() => {
     fetchApprovals();
   }, []);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+    
+    const interval = setInterval(() => {
+      fetchApprovals();
+    }, refreshInterval * 1000);
+
+    return () => clearInterval(interval);
+  }, [autoRefreshEnabled, refreshInterval]);
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -73,9 +86,55 @@ export default function Approvals({ user }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div>
-        <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-heading)' }}>Workflow Approvals</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Review pending organizational award proposals, bids, and Purchase Order issuances.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-heading)' }}>Workflow Approvals</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Review pending organizational award proposals, bids, and Purchase Order issuances.</p>
+        </div>
+        
+        {/* Auto-refresh controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', background: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', fontSize: '0.85rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '500' }}>
+            <input
+              type="checkbox"
+              checked={autoRefreshEnabled}
+              onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            <span>🔄 Auto Refresh</span>
+          </label>
+          
+          {autoRefreshEnabled && (
+            <select
+              value={refreshInterval}
+              onChange={(e) => setRefreshInterval(parseInt(e.target.value))}
+              style={{
+                padding: '0.4rem 0.6rem',
+                background: 'var(--input-bg)',
+                border: '1px solid var(--panel-border)',
+                borderRadius: '4px',
+                color: 'var(--text-main)',
+                fontSize: '0.8rem',
+                cursor: 'pointer'
+              }}
+            >
+              <option value={10}>Every 10s</option>
+              <option value={15}>Every 15s</option>
+              <option value={30}>Every 30s</option>
+              <option value={60}>Every 1m</option>
+              <option value={120}>Every 2m</option>
+            </select>
+          )}
+
+          <button
+            onClick={fetchApprovals}
+            className="btn btn-secondary"
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+            title="Refresh now"
+          >
+            ↻
+          </button>
+        </div>
       </div>
 
       <div className="glass-panel" style={{ padding: '1rem' }}>
