@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { CheckCircle2, XCircle, Clock, Eye, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Eye, AlertCircle, ChevronRight, Calendar } from 'lucide-react';
 
 export default function Approvals({ user }) {
   const [approvals, setApprovals] = useState([]);
@@ -47,6 +47,30 @@ export default function Approvals({ user }) {
     }
   };
 
+  // Workflow state transition visualization
+  const getWorkflowStates = (status) => {
+    return [
+      { label: 'Submitted', completed: true, current: false, color: '#10b981' },
+      { label: 'Under Review', completed: status !== 'pending', current: status === 'pending', color: status === 'pending' ? '#f59e0b' : '#10b981' },
+      { label: status === 'rejected' ? 'Rejected' : 'Approved', completed: status !== 'pending', current: status !== 'pending', color: status === 'rejected' ? '#ef4444' : '#10b981' }
+    ];
+  };
+
+  // Calculate approval timeline
+  const getApprovalTimeline = (approval) => {
+    const createdDate = new Date(approval.createdAt);
+    const reviewedDate = approval.updatedAt ? new Date(approval.updatedAt) : null;
+    const hoursWaiting = reviewedDate 
+      ? ((reviewedDate - createdDate) / (1000 * 60 * 60)).toFixed(1)
+      : ((new Date() - createdDate) / (1000 * 60 * 60)).toFixed(1);
+    
+    return {
+      submitted: createdDate.toLocaleString(),
+      reviewed: reviewedDate ? reviewedDate.toLocaleString() : 'Pending',
+      hoursWaiting: parseFloat(hoursWaiting)
+    };
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div>
@@ -67,6 +91,7 @@ export default function Approvals({ user }) {
               <thead>
                 <tr>
                   <th>Requested Date</th>
+                  <th>Waiting Time</th>
                   <th>Entity Type</th>
                   <th>Project Name / Details</th>
                   <th>Target Cost</th>
@@ -89,11 +114,21 @@ export default function Approvals({ user }) {
                     }
                   }
 
+                  const timeline = getApprovalTimeline(app);
+                  const waitingHours = timeline.hoursWaiting;
+                  const isOverdue = waitingHours > 24 && app.status === 'pending';
+
                   return (
                     <tr key={app.id}>
                       <td>
                         <div>{new Date(app.createdAt).toLocaleDateString()}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(app.createdAt).toLocaleTimeString()}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: '600', color: isOverdue ? 'var(--error)' : 'var(--text-main)' }}>
+                          {waitingHours.toFixed(1)}h
+                        </div>
+                        {isOverdue && <div style={{ fontSize: '0.7rem', color: 'var(--error)', fontWeight: '600' }}>⚠️ Overdue</div>}
                       </td>
                       <td>
                         <span style={{ textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>
@@ -139,8 +174,67 @@ export default function Approvals({ user }) {
       {/* Review Modal */}
       {selectedApproval && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '500px' }}>
-            <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '1.5rem' }}>Review Proposal Proposal</h2>
+          <div className="modal-content glass-panel" style={{ maxWidth: '550px' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '1.5rem' }}>Review Proposal</h2>
+            
+            {/* Workflow State Transitions */}
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
+                Workflow State Transition
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between' }}>
+                {getWorkflowStates(selectedApproval.status).map((state, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '0.5rem' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: state.completed || state.current ? state.color : 'rgba(0,0,0,0.08)',
+                      color: state.completed || state.current ? '#fff' : 'var(--text-muted)',
+                      fontSize: '0.75rem',
+                      fontWeight: '700'
+                    }}>
+                      {state.completed ? '✓' : state.current ? '⏳' : (idx + 1)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-main)' }}>{state.label}</div>
+                      {state.current && <div style={{ fontSize: '0.65rem', color: state.color, fontWeight: '600' }}>In Progress</div>}
+                    </div>
+                    {idx < getWorkflowStates(selectedApproval.status).length - 1 && (
+                      <ChevronRight size={16} color="var(--panel-border)" style={{ marginLeft: '-0.5rem' }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Approval Timeline */}
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Calendar size={12} /> Approval Timeline
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>📤 Submitted:</span>
+                  <span style={{ fontWeight: '600' }}>{getApprovalTimeline(selectedApproval).submitted}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>⏱️ Waiting:</span>
+                  <span style={{ fontWeight: '600', color: getApprovalTimeline(selectedApproval).hoursWaiting > 24 ? 'var(--error)' : 'var(--text-main)' }}>
+                    {getApprovalTimeline(selectedApproval).hoursWaiting} hours
+                  </span>
+                </div>
+                {selectedApproval.status !== 'pending' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>✅ Reviewed:</span>
+                    <span style={{ fontWeight: '600' }}>{getApprovalTimeline(selectedApproval).reviewed}</span>
+                  </div>
+                )}
+              </div>
+            </div>
             
             <div style={{ fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
               <div>

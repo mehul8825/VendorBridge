@@ -4,7 +4,7 @@ import {
   ArrowLeft, Star, Clock, Trophy, Award, CheckCircle,
   GitCompare, ChevronDown, TrendingDown, TrendingUp,
   ShieldCheck, MessageSquare, BadgeCheck, Zap, Package,
-  BarChart2, AlertTriangle
+  BarChart2, AlertTriangle, ArrowUpDown
 } from 'lucide-react';
 
 // ── Score Bar ─────────────────────────────────────────────────────────────────
@@ -48,6 +48,7 @@ export default function BidComparison({ user, rfqId, setActiveTab }) {
   const [error, setError]           = useState('');
   const [submittingAward, setSubmittingAward] = useState(null);
   const [viewMode, setViewMode]     = useState('cards'); // 'cards' | 'table'
+  const [sortBy, setSortBy]         = useState('score'); // 'score' | 'price' | 'delivery' | 'rating'
 
   const [allRfqs, setAllRfqs]           = useState([]);
   const [rfqsLoading, setRfqsLoading]   = useState(false);
@@ -87,6 +88,23 @@ export default function BidComparison({ user, rfqId, setActiveTab }) {
     }
   };
 
+  // Sort bids based on selected criterion
+  const getSortedBids = (bids) => {
+    if (!bids) return [];
+    const sorted = [...bids];
+    switch (sortBy) {
+      case 'price':
+        return sorted.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      case 'delivery':
+        return sorted.sort((a, b) => parseInt(a.deliveryDays) - parseInt(b.deliveryDays));
+      case 'rating':
+        return sorted.sort((a, b) => parseFloat(b.vendor?.rating || 0) - parseFloat(a.vendor?.rating || 0));
+      case 'score':
+      default:
+        return sorted.sort((a, b) => b.scores.totalScore - a.scores.totalScore);
+    }
+  };
+
   const activeId = rfqId || selectedRfqId;
 
   return (
@@ -102,17 +120,70 @@ export default function BidComparison({ user, rfqId, setActiveTab }) {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {data?.bids?.length > 0 && (
-            <div style={{ display: 'flex', background: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', overflow: 'hidden', fontSize: '0.8rem' }}>
-              {['cards', 'table'].map(m => (
-                <button key={m} onClick={() => setViewMode(m)} style={{
-                  padding: '0.4rem 0.9rem', border: 'none', cursor: 'pointer',
-                  background: viewMode === m ? 'var(--primary)' : 'transparent',
-                  color: viewMode === m ? '#fff' : 'var(--text-muted)',
-                  fontWeight: viewMode === m ? '600' : '500', transition: 'all 0.15s',
-                  textTransform: 'capitalize'
-                }}>{m === 'cards' ? '⬛ Cards' : '📊 Table'}</button>
-              ))}
-            </div>
+            <>
+              <div style={{ display: 'flex', background: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', overflow: 'hidden', fontSize: '0.8rem' }}>
+                <button
+                  title="Sort by Overall Score"
+                  onClick={() => setSortBy('score')}
+                  style={{
+                    padding: '0.4rem 0.9rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                    background: sortBy === 'score' ? 'var(--primary)' : 'transparent',
+                    color: sortBy === 'score' ? '#fff' : 'var(--text-muted)',
+                    fontWeight: sortBy === 'score' ? '600' : '500', transition: 'all 0.15s', fontSize: '0.75rem'
+                  }}
+                >
+                  <Trophy size={12} /> Score
+                </button>
+                <button
+                  title="Sort by Lowest Price"
+                  onClick={() => setSortBy('price')}
+                  style={{
+                    padding: '0.4rem 0.9rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                    background: sortBy === 'price' ? 'var(--primary)' : 'transparent',
+                    color: sortBy === 'price' ? '#fff' : 'var(--text-muted)',
+                    fontWeight: sortBy === 'price' ? '600' : '500', transition: 'all 0.15s', fontSize: '0.75rem'
+                  }}
+                >
+                  <TrendingDown size={12} /> Price
+                </button>
+                <button
+                  title="Sort by Fastest Delivery"
+                  onClick={() => setSortBy('delivery')}
+                  style={{
+                    padding: '0.4rem 0.9rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                    background: sortBy === 'delivery' ? 'var(--primary)' : 'transparent',
+                    color: sortBy === 'delivery' ? '#fff' : 'var(--text-muted)',
+                    fontWeight: sortBy === 'delivery' ? '600' : '500', transition: 'all 0.15s', fontSize: '0.75rem'
+                  }}
+                >
+                  <Zap size={12} /> Delivery
+                </button>
+                <button
+                  title="Sort by Vendor Rating"
+                  onClick={() => setSortBy('rating')}
+                  style={{
+                    padding: '0.4rem 0.9rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                    background: sortBy === 'rating' ? 'var(--primary)' : 'transparent',
+                    color: sortBy === 'rating' ? '#fff' : 'var(--text-muted)',
+                    fontWeight: sortBy === 'rating' ? '600' : '500', transition: 'all 0.15s', fontSize: '0.75rem'
+                  }}
+                >
+                  <Star size={12} /> Rating
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', background: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', overflow: 'hidden', fontSize: '0.8rem' }}>
+                {['cards', 'table'].map(m => (
+                  <button key={m} onClick={() => setViewMode(m)} style={{
+                    padding: '0.4rem 0.9rem', border: 'none', cursor: 'pointer',
+                    background: viewMode === m ? 'var(--primary)' : 'transparent',
+                    color: viewMode === m ? '#fff' : 'var(--text-muted)',
+                    fontWeight: viewMode === m ? '600' : '500', transition: 'all 0.15s',
+                    textTransform: 'capitalize'
+                  }}>{m === 'cards' ? '⬛ Cards' : '📊 Table'}</button>
+                ))}
+              </div>
+            </>
           )}
           <button onClick={() => setActiveTab('rfqs')} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
             <ArrowLeft size={14} /> Back to RFQs
@@ -218,7 +289,7 @@ export default function BidComparison({ user, rfqId, setActiveTab }) {
             {/* ── CARDS VIEW ── */}
             {viewMode === 'cards' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '1.25rem' }}>
-                {bids.map((bid) => {
+                {getSortedBids(bids).map((bid) => {
                   const s = bid.scores;
                   const isFirst = bid.rank === 1;
                   const rankColor = RANK_COLORS[bid.rank - 1] || '#64748b';
@@ -343,7 +414,7 @@ export default function BidComparison({ user, rfqId, setActiveTab }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {bids.map((bid, idx) => {
+                      {getSortedBids(bids).map((bid, idx) => {
                         const s = bid.scores;
                         const rankColor = RANK_COLORS[bid.rank - 1] || '#64748b';
                         return (

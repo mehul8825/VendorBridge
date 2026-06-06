@@ -28,6 +28,12 @@ const RFQ = sequelize.define('RFQ', {
     type: DataTypes.DATEONLY,
     allowNull: false
   },
+  attachments: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array of attachment objects: [{name, url, uploadedAt, size}]'
+  },
   status: {
     type: DataTypes.ENUM('draft', 'open', 'closed', 'awarded'),
     allowNull: false,

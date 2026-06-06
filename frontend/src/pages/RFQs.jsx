@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Plus, Clock, FileText, CheckCircle2, ChevronRight, Eye, Sparkles } from 'lucide-react';
+import { Plus, Clock, FileText, CheckCircle2, ChevronRight, Eye, Sparkles, Upload, X } from 'lucide-react';
 
 export default function RFQs({ user, setActiveTab, setComparisonRfqId }) {
   const [rfqs, setRfqs] = useState([]);
@@ -18,6 +18,7 @@ export default function RFQs({ user, setActiveTab, setComparisonRfqId }) {
   const [allVendors, setAllVendors] = useState([]);
   const [selectedVendorIds, setSelectedVendorIds] = useState([]);
   const [createLoading, setCreateLoading] = useState(false);
+  const [attachments, setAttachments] = useState([]);
 
   // Selected RFQ detail view
   const [selectedRfq, setSelectedRfq] = useState(null);
@@ -88,7 +89,8 @@ export default function RFQs({ user, setActiveTab, setComparisonRfqId }) {
         quantity,
         targetBudget: parseFloat(targetBudget),
         deadline,
-        assignedVendorIds: selectedVendorIds.length > 0 ? selectedVendorIds : null
+        assignedVendorIds: selectedVendorIds.length > 0 ? selectedVendorIds : null,
+        attachments: attachments
       };
 
       await api.post('/rfqs', payload);
@@ -99,6 +101,7 @@ export default function RFQs({ user, setActiveTab, setComparisonRfqId }) {
       setTargetBudget('');
       setDeadline('');
       setSelectedVendorIds([]);
+      setAttachments([]);
       
       fetchRfqs();
     } catch (err) {
@@ -146,6 +149,29 @@ export default function RFQs({ user, setActiveTab, setComparisonRfqId }) {
     } else {
       setSelectedVendorIds(prev => [...prev, vendorId]);
     }
+  };
+
+  const handleAttachmentAdd = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const attachment = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          data: evt.target.result, // Base64 data
+          uploadedAt: new Date().toISOString()
+        };
+        setAttachments(prev => [...prev, attachment]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = ''; // Reset file input
+  };
+
+  const handleRemoveAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -254,6 +280,55 @@ export default function RFQs({ user, setActiveTab, setComparisonRfqId }) {
                     <div style={{ fontWeight: '600' }}>₹{parseFloat(selectedRfq.targetBudget).toLocaleString('en-IN')}</div>
                   </div>
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-secondary)' }}>Deadline:</span>
+                    <div style={{ fontWeight: '600', color: 'var(--primary)' }}>{selectedRfq.deadline}</div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-secondary)' }}>Status:</span>
+                    <div style={{ fontWeight: '600' }}><span className={`status-pill ${selectedRfq.status}`}>{selectedRfq.status}</span></div>
+                  </div>
+                </div>
+
+                {/* Display Attachments if any */}
+                {selectedRfq.attachments && selectedRfq.attachments.length > 0 && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--panel-border)' }}>
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.75rem' }}>
+                      <FileText size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                      Attachments ({selectedRfq.attachments.length})
+                    </strong>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {selectedRfq.attachments.map((att, idx) => (
+                        <a
+                          key={idx}
+                          href={att.data || att.url}
+                          download={att.name}
+                          style={{
+                            padding: '0.75rem',
+                            background: 'rgba(99,102,241,0.05)',
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            color: 'var(--primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontSize: '0.85rem',
+                            fontWeight: '500',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+                          onMouseOut={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.05)'}
+                        >
+                          <FileText size={14} />
+                          {att.name} ({att.size ? `${(att.size / 1024).toFixed(2)} KB` : 'size unknown'})
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* View comparisons if procurement/admin/manager */}
@@ -441,6 +516,52 @@ export default function RFQs({ user, setActiveTab, setComparisonRfqId }) {
                     </label>
                   ))}
                 </div>
+              </div>
+
+              {/* Attachments */}
+              <div className="form-group">
+                <label className="form-label">Attachments (Optional)</label>
+                <div style={{ border: '2px dashed var(--primary)', borderRadius: '8px', padding: '1.5rem', textAlign: 'center', background: 'rgba(99,102,241,0.02)', cursor: 'pointer', transition: 'all 0.3s' }}>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleAttachmentAdd}
+                    style={{ display: 'none' }}
+                    id="file-input"
+                  />
+                  <label htmlFor="file-input" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <Upload size={24} color="var(--primary)" />
+                    <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Click to upload files or drag and drop</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Supported: PDF, DOC, XLS, Images, etc.</span>
+                  </label>
+                </div>
+
+                {/* Display attached files */}
+                {attachments.length > 0 && (
+                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <strong style={{ fontSize: '0.85rem' }}>Attached Files ({attachments.length}):</strong>
+                    {attachments.map((att, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <FileText size={16} color="var(--primary)" />
+                          <div>
+                            <div style={{ fontWeight: '500' }}>{att.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              {(att.size / 1024).toFixed(2)} KB
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachment(idx)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                        >
+                          <X size={18} color="var(--error)" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>

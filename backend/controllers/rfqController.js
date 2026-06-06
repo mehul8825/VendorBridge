@@ -2,7 +2,7 @@ const { RFQ, RFQAssignment, VendorProfile, Quotation, User, ActivityLog, Notific
 
 exports.createRFQ = async (req, res) => {
   try {
-    const { title, productDetails, quantity, targetBudget, deadline, assignedVendorIds } = req.body;
+    const { title, productDetails, quantity, targetBudget, deadline, assignedVendorIds, attachments } = req.body;
 
     if (!title || !productDetails || !quantity || !targetBudget || !deadline) {
       return res.status(400).json({ message: 'Title, product details, quantity, target budget, and deadline are required.' });
@@ -14,6 +14,7 @@ exports.createRFQ = async (req, res) => {
       quantity,
       targetBudget,
       deadline,
+      attachments: attachments || [],
       status: 'open',
       createdBy: req.user.id
     });
