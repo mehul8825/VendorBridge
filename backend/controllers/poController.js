@@ -1,4 +1,5 @@
-const { PurchaseOrder, RFQ, VendorProfile, Quotation, ActivityLog, Notification } = require('../models');
+const { PurchaseOrder, RFQ, VendorProfile, Quotation, User, Approval, ActivityLog, Notification } = require('../models');
+const { Op } = require('sequelize');
 
 exports.getPOs = async (req, res) => {
   try {
@@ -10,7 +11,10 @@ exports.getPOs = async (req, res) => {
       if (!profile) return res.json([]);
 
       pos = await PurchaseOrder.findAll({
-        where: { vendorId: profile.id },
+        where: { 
+          vendorId: profile.id,
+          status: { [Op.in]: ['approved', 'sent', 'accepted', 'rejected'] }
+        },
         include: [
           { model: RFQ, as: 'rfq' },
           { model: Quotation, as: 'quotation' }
@@ -138,21 +142,32 @@ exports.generatePO = async (req, res) => {
       vendorId: quote.vendorId,
       quotationId: quote.id,
       totalAmount: quote.price,
-      status: 'approved' // Automatically approved since it came from approved quote
+      status: 'pending_approval'
     });
+
+    // Route for manager verification automatically
+    const manager = await User.findOne({ where: { role: 'manager', status: 'active' } });
+    if (manager) {
+      await Approval.create({
+        entityType: 'po',
+        entityId: po.id,
+        managerId: manager.id,
+        status: 'pending',
+        remarks: `Verification request for Purchase Order ${poNumber}.`
+      });
+
+      await Notification.create({
+        userId: manager.id,
+        message: `New Purchase Order verification request pending for ${poNumber}`,
+        type: 'info'
+      });
+    }
 
     // Create activity log
     await ActivityLog.create({
       userId: req.user.id,
       action: 'PO_GENERATED',
-      details: `Procurement Officer generated PO ${poNumber} for quotation #${quote.id} and vendor '${quote.vendor.companyName}'`
-    });
-
-    // Notify vendor
-    await Notification.create({
-      userId: quote.vendor.userId,
-      message: `Purchase Order ${poNumber} has been generated and released for your bid on "${quote.rfq.title}".`,
-      type: 'info'
+      details: `Procurement Officer generated PO ${poNumber} (awaiting manager verification)`
     });
 
     res.status(201).json(po);
