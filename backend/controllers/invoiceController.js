@@ -1,27 +1,18 @@
 const { Invoice, PurchaseOrder, RFQ, VendorProfile, User, ActivityLog, Notification } = require('../models');
 const nodemailer = require('nodemailer');
 
-// Helper to send email
 const sendInvoiceEmailHelper = async (to, subject, htmlContent) => {
   try {
-    let transporter;
-
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-      });
-    } else {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: testAccount.smtp.host,
-        port: testAccount.smtp.port,
-        secure: testAccount.smtp.secure,
-        auth: { user: testAccount.user, pass: testAccount.pass }
-      });
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      throw new Error("SMTP credentials are not fully configured in the environment variables. Please update your .env file with SMTP_HOST, SMTP_USER, and SMTP_PASS to enable email dispatch.");
     }
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
 
     const info = await transporter.sendMail({
       from: '"VendorBridge ERP" <no-reply@vendorbridge.com>',
@@ -30,11 +21,10 @@ const sendInvoiceEmailHelper = async (to, subject, htmlContent) => {
       html: htmlContent
     });
 
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    return { success: true, messageId: info.messageId, previewUrl };
+    return { success: true, messageId: info.messageId, previewUrl: null };
   } catch (error) {
-    console.warn('Nodemailer failed. Logging to console:', error.message);
-    return { success: true, mocked: true, previewUrl: null };
+    console.error('Nodemailer failed:', error.message);
+    throw error;
   }
 };
 

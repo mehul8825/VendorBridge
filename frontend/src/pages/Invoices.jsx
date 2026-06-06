@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import {
   Printer, Mail, DollarSign, ChevronRight, Send,
-  CheckCircle2, Scan, X, Package, AlertTriangle, ShieldCheck
+  CheckCircle2, Scan, X, Package, AlertTriangle, ShieldCheck, Download
 } from 'lucide-react';
 
 // ── Barcode Visual Component ──────────────────────────────────────────────────
@@ -231,6 +231,30 @@ export default function Invoices({ user }) {
 
   const [showScanner, setShowScanner] = useState(false);
 
+  const handleDownloadPDF = () => {
+    const element = document.querySelector('.doc-sheet');
+    if (!element) return;
+    
+    const opt = {
+      margin: 0.5,
+      filename: `Invoice_${selectedInvoice?.invoiceNumber}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    if (window.html2pdf) {
+      window.html2pdf().set(opt).from(element).save();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = () => {
+        window.html2pdf().set(opt).from(element).save();
+      };
+      document.body.appendChild(script);
+    }
+  };
+
   const fetchInvoices = async () => {
     try {
       const data = await api.get('/invoices');
@@ -383,6 +407,9 @@ export default function Invoices({ user }) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', borderBottom: '1px solid var(--panel-border)', paddingBottom: '1rem' }}>
                 <button onClick={() => window.print()} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
                   <Printer size={14} /> Print
+                </button>
+                <button onClick={handleDownloadPDF} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                  <Download size={14} /> Download PDF
                 </button>
                 <button onClick={() => { setShowEmailModal(true); setEmailResult(null); }} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
                   <Mail size={14} /> Email Invoice
