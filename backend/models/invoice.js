@@ -33,13 +33,34 @@ const Invoice = sequelize.define('Invoice', {
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('draft', 'sent', 'paid', 'overdue'),
+    type: DataTypes.ENUM('draft', 'pending_approval', 'approved', 'paid', 'overdue'),
     allowNull: false,
-    defaultValue: 'sent'
+    defaultValue: 'pending_approval'
   },
   invoiceDate: {
     type: DataTypes.DATEONLY,
     allowNull: false
+  },
+  dcNumber: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  dcDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  invoicedQuantity: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 1
+  },
+  selectedItems: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  barcode: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   timestamps: true

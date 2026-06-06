@@ -235,7 +235,21 @@ const seedDatabase = async () => {
       taxAmount,
       totalAmount,
       status: 'paid',
-      invoiceDate: '2026-05-20'
+      invoiceDate: '2026-05-20',
+      dcNumber: 'DC-2026-0001',
+      dcDate: '2026-05-20',
+      invoicedQuantity: 1,
+      selectedItems: JSON.stringify(['Item Unit #1']),
+      barcode: JSON.stringify({
+        INVOICE_NO: 'INV-2026-0001', INVOICE_DATE: '2026-05-20',
+        DC_NO: 'DC-2026-0001', DC_DATE: '2026-05-20',
+        VENDOR: 'Zenith Office Furnishings', GSTIN: '27CCCCC3333C3Z3',
+        PHONE: '9876543212', CONTACT: 'Bob Johnson',
+        PO_NUMBER: 'PO-2026-0001', PROJECT: 'Boardroom Renovation - Conference Chairs and Tables',
+        ITEMS_SELECTED: 1, TOTAL_QTY: 1,
+        SUBTOTAL: subtotal.toFixed(2), TAX: taxAmount.toFixed(2), TOTAL: totalAmount.toFixed(2),
+        STATUS: 'GATE_PASS_APPROVED', ISSUED_AT: new Date().toISOString()
+      })
     });
 
     console.log('Invoices created.');

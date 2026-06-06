@@ -55,6 +55,7 @@ router.put('/pos/:id/status', protect, authorize('vendor'), poController.updateP
 router.post('/invoices/generate', protect, authorize('vendor', 'procurement', 'admin'), invoiceController.generateInvoice);
 router.get('/invoices', protect, invoiceController.getInvoices);
 router.get('/invoices/:id', protect, invoiceController.getInvoiceById);
+router.put('/invoices/:id/approve', protect, authorize('procurement', 'admin'), invoiceController.approveInvoice);
 router.put('/invoices/:id/pay', protect, authorize('admin', 'manager'), invoiceController.payInvoice);
 router.post('/invoices/:id/email', protect, invoiceController.sendInvoiceEmail);
 
