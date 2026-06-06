@@ -197,6 +197,15 @@ const seedDatabase = async () => {
       status: 'accepted'
     });
 
+    const quoteApex = await db.Quotation.create({
+      rfqId: rfq2.id,
+      vendorId: apexProfile.id,
+      price: 140000.00,
+      deliveryDays: 3,
+      notes: 'Includes door-to-door transit, GPS tracker, and custom cargo insurance.',
+      status: 'accepted'
+    });
+
     console.log('Quotations created.');
 
     // 6. Create Purchase Orders
@@ -240,6 +249,15 @@ const seedDatabase = async () => {
       managerId: manager.id,
       status: 'approved',
       remarks: 'Lowest price offered and faster delivery than Acme. Approved for awarding.'
+    });
+
+    // Create an approved approval record for quoteApex
+    await db.Approval.create({
+      entityType: 'quotation',
+      entityId: quoteApex.id,
+      managerId: manager.id,
+      status: 'approved',
+      remarks: 'Complies with budget and timeline guidelines. Standard shipping vendor.'
     });
 
     // Create a pending approval for Acme's laptop quotation to show manager workflow
