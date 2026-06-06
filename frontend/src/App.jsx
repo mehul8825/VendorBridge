@@ -11,6 +11,7 @@ import Approvals from './pages/Approvals';
 import PurchaseOrders from './pages/PurchaseOrders';
 import Invoices from './pages/Invoices';
 import LogsReports from './pages/LogsReports';
+import DemoAssistant from './components/DemoAssistant';
 import { api } from './services/api';
 import { Bell, Sun, Moon, User } from 'lucide-react';
 
@@ -67,10 +68,18 @@ export default function App() {
     const token = localStorage.getItem('vb_token');
     const userData = localStorage.getItem('vb_user');
     if (token && userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setIsAuthenticated(true);
-      checkVendorProfileStatus(parsedUser);
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+        checkVendorProfileStatus(parsedUser);
+      } catch (e) {
+        console.error('Failed to parse user data from local storage', e);
+        localStorage.removeItem('vb_token');
+        localStorage.removeItem('vb_user');
+        setUser(null);
+        setIsAuthenticated(false);
+      }
     } else {
       setUser(null);
       setIsAuthenticated(false);
@@ -113,7 +122,9 @@ export default function App() {
       // Auto-navigate based on notification context
       if (message) {
         const msg = message.toLowerCase();
-        if (msg.includes('approval') || msg.includes('manager')) {
+        if (msg.includes('vendor') || msg.includes('onboarding')) {
+          setActiveTab('vendors');
+        } else if (msg.includes('approval') || msg.includes('manager')) {
           setActiveTab('approvals');
         } else if (msg.includes('invoice')) {
           setActiveTab('invoices');
@@ -327,6 +338,7 @@ export default function App() {
           {renderContent()}
         </div>
       </main>
+      <DemoAssistant />
     </div>
   );
 }

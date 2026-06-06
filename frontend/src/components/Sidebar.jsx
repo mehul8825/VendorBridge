@@ -11,10 +11,10 @@ const STEPS = [
   { id: 'vendors',    label: 'Vendor Registry',        icon: Users,            roles: ['admin', 'procurement', 'manager'],           step: 1  },
   { id: 'rfqs',       label: 'RFQs & Bids',           icon: FileText,         roles: ['admin', 'procurement', 'vendor'],            step: 2  },
   { id: 'compare',    label: 'Bid Evaluation',         icon: GitCompare,       roles: ['admin', 'procurement', 'manager'],           step: 4  },
-  { id: 'approvals',  label: 'Approvals',              icon: CheckSquare,      roles: ['admin', 'manager', 'procurement'],           step: 5  },
+  { id: 'approvals',  label: 'Approvals',              icon: CheckSquare,      roles: ['admin', 'manager'],                          step: 5  },
   { id: 'pos',        label: 'Purchase Orders',        icon: ClipboardList,    roles: ['admin', 'procurement', 'manager', 'vendor'], step: 6  },
   { id: 'invoices',   label: 'Invoices & Billing',     icon: Receipt,          roles: ['admin', 'procurement', 'manager', 'vendor'], step: 8  },
-  { id: 'logs',       label: 'Reports & Analytics',    icon: BarChart3,        roles: ['admin', 'manager', 'procurement'],           step: 10 },
+  { id: 'logs',       label: 'Reports & Analytics',    icon: BarChart3,        roles: ['admin'],                                     step: 10 },
 ];
 
 const ROLE_META = {
