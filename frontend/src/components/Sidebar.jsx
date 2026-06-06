@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, CheckSquare,
   Receipt, FileSpreadsheet, ClipboardList, LogOut,
-  UserCheck, GitCompare, BarChart3, ChevronRight
+  UserCheck, GitCompare, BarChart3, ChevronRight, Menu, X
 } from 'lucide-react';
 
 const STEPS = [
@@ -27,24 +27,35 @@ const ROLE_META = {
 export default function Sidebar({ user, activeTab, setActiveTab, onLogout, vendorProfileApproved = true }) {
   const role = user?.role || 'vendor';
   const roleMeta = ROLE_META[role] || ROLE_META.vendor;
-
   const visible = STEPS.filter(item => item.roles.includes(role));
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <aside className="sidebar">
-      {/* Logo */}
-      <div className="sidebar-header">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius: '8px', flexShrink: 0 }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
-            <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-            <rect width="20" height="14" x="2" y="6" rx="2" />
-          </svg>
+    <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+      {/* Header with Hamburger */}
+      <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius: '8px', flexShrink: 0 }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
+              <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              <rect width="20" height="14" x="2" y="6" rx="2" />
+            </svg>
+          </div>
+          <div>
+            <span className="logo-text">VendorBridge</span>
+            <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '500', letterSpacing: '0.04em', marginTop: '1px' }}>PROCUREMENT ERP</div>
+          </div>
         </div>
-        <div>
-          <span className="logo-text">VendorBridge</span>
-          <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '500', letterSpacing: '0.04em', marginTop: '1px' }}>PROCUREMENT ERP</div>
-        </div>
+        <button 
+          className="mobile-menu-toggle"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}
+        >
+          {isMobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+        </button>
       </div>
+
+      <div className="sidebar-collapsible">
 
       {/* User role badge */}
       <div style={{ margin: '0.75rem 1rem', padding: '0.65rem 0.85rem', background: roleMeta.bg, borderRadius: '8px', border: `1px solid ${roleMeta.color}22` }}>
@@ -67,7 +78,12 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, vendo
           return (
             <button
               key={item.id}
-              onClick={() => { if (!isRestricted) setActiveTab(item.id); }}
+              onClick={() => { 
+                if (!isRestricted) {
+                  setActiveTab(item.id);
+                  setIsMobileMenuOpen(false);
+                }
+              }}
               className={`sidebar-link ${isActive ? 'active' : ''}`}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -129,6 +145,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, vendo
           <LogOut size={15} />
           <span>Sign Out</span>
         </button>
+      </div>
       </div>
     </aside>
   );

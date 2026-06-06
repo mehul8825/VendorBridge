@@ -104,10 +104,25 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  const handleMarkNotificationRead = async (id) => {
+  const handleMarkNotificationRead = async (id, message) => {
     try {
       await api.put(`/auth/notifications/${id}/read`);
       fetchNotifications();
+      
+      // Auto-navigate based on notification context
+      if (message) {
+        const msg = message.toLowerCase();
+        if (msg.includes('approval') || msg.includes('manager')) {
+          setActiveTab('approvals');
+        } else if (msg.includes('invoice')) {
+          setActiveTab('invoices');
+        } else if (msg.includes('purchase order') || msg.includes('po-')) {
+          setActiveTab('pos');
+        } else if (msg.includes('rfq') || msg.includes('quotation') || msg.includes('bid')) {
+          setActiveTab('rfqs');
+        }
+        setShowNotifications(false); // Close panel after click
+      }
     } catch (err) {
       console.log(err);
     }
@@ -284,7 +299,7 @@ export default function App() {
                       notifications.map(notif => (
                         <div 
                           key={notif.id}
-                          onClick={() => handleMarkNotificationRead(notif.id)}
+                          onClick={() => handleMarkNotificationRead(notif.id, notif.message)}
                           style={{
                             fontSize: '0.8rem', padding: '0.5rem', borderRadius: '6px',
                             background: notif.isRead ? 'transparent' : 'rgba(0,0,0,0.02)',
