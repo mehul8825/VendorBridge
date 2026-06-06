@@ -1,4 +1,4 @@
-const { RFQ, RFQAssignment, VendorProfile, Quotation, User, ActivityLog, Notification } = require('../models');
+const { RFQ, RFQAssignment, VendorProfile, Quotation, User, ActivityLog, Notification, RFQMessage } = require('../models');
 
 exports.createRFQ = async (req, res) => {
   try {
@@ -306,3 +306,47 @@ exports.closeRFQ = async (req, res) => {
     res.status(500).json({ message: 'Failed to close RFQ' });
   }
 };
+
+exports.getRFQMessages = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const messages = await RFQMessage.findAll({
+      where: { rfqId: id },
+      include: [{ model: User, as: 'sender', attributes: ['name', 'role'] }],
+      order: [['createdAt', 'ASC']]
+    });
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch messages' });
+  }
+};
+
+exports.postRFQMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { messageText } = req.body;
+    
+    if (!messageText) return res.status(400).json({ message: 'Message text required' });
+
+    const message = await RFQMessage.create({
+      rfqId: id,
+      senderId: req.user.id,
+      messageText
+    });
+
+    const messageWithSender = await RFQMessage.findByPk(message.id, {
+      include: [{ model: User, as: 'sender', attributes: ['name', 'role'] }]
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_rfq_message', messageWithSender); 
+    }
+
+    res.status(201).json(messageWithSender);
+  } catch (error) {
+    console.error('Post message error:', error);
+    res.status(500).json({ message: 'Failed to post message' });
+  }
+};
+

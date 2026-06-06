@@ -392,10 +392,11 @@ export default function Dashboard({ user, setActiveTab, setComparisonRfqId }) {
           </div>
 
           <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>ERP Activity Feed</h3>
+            <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>Recent Activity & Updates</h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
-              {user.role === 'admin' && stats.recentActivities ? (
+              
+              {user.role === 'admin' && stats.recentActivities && stats.recentActivities.length > 0 && (
                 stats.recentActivities.map((log, index) => (
                   <div key={index} style={{ fontSize: '0.825rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '0.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
@@ -405,25 +406,86 @@ export default function Dashboard({ user, setActiveTab, setComparisonRfqId }) {
                     <p style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>{log.details}</p>
                   </div>
                 ))
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {/* Mocking generic system alerts if logs not returned directly for this role */}
-                  <div style={{ fontSize: '0.825rem' }}>
-                    <span style={{ color: 'var(--success)', fontWeight: '600' }}>SYS_OK</span>
-                    <p style={{ color: 'var(--text-secondary)' }}>ERP connection established.</p>
-                  </div>
-                  <div style={{ fontSize: '0.825rem' }}>
-                    <span style={{ color: 'var(--info)', fontWeight: '600' }}>DATABASE_SYNCED</span>
-                    <p style={{ color: 'var(--text-secondary)' }}>Synced configurations and schemas successfully.</p>
-                  </div>
-                  {user.role === 'vendor' && (
-                    <div style={{ fontSize: '0.825rem' }}>
-                      <span style={{ color: 'var(--primary)', fontWeight: '600' }}>PROFILE_VERIFIED</span>
-                      <p style={{ color: 'var(--text-secondary)' }}>Your profile is approved. You can submit bids.</p>
-                    </div>
-                  )}
-                </div>
               )}
+
+              {user.role === 'procurement' && (
+                <>
+                  {stats.recentPOs && stats.recentPOs.map((po, idx) => (
+                    <div key={idx} style={{ fontSize: '0.825rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontWeight: '600', color: 'var(--primary)' }}>{po.poNumber}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(po.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ color: 'var(--text-main)' }}>{po.vendor?.companyName}</span>
+                        <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>₹{parseFloat(po.totalAmount).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', marginTop: '2px' }}>
+                        Status: <span className={`status-pill ${po.status}`}>{po.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {stats.recentInvoices && stats.recentInvoices.map((inv, idx) => (
+                    <div key={`inv-${idx}`} style={{ fontSize: '0.825rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontWeight: '600', color: 'var(--info)' }}>{inv.invoiceNumber}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(inv.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ color: 'var(--text-main)' }}>{inv.vendor?.companyName}</span>
+                        <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>₹{parseFloat(inv.totalAmount).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(!stats.recentPOs?.length && !stats.recentInvoices?.length) && <p style={{color: 'var(--text-muted)'}}>No recent POs or Invoices.</p>}
+                </>
+              )}
+
+              {user.role === 'manager' && stats.recentApprovals && (
+                <>
+                  {stats.recentApprovals.map((app, idx) => (
+                    <div key={idx} style={{ fontSize: '0.825rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontWeight: '600', textTransform: 'capitalize' }}>{app.entityType} Approval</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(app.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p style={{ color: 'var(--text-main)', marginTop: '2px' }}>Status: <span className={`status-pill ${app.status}`}>{app.status}</span></p>
+                    </div>
+                  ))}
+                  {stats.recentApprovals.length === 0 && <p style={{color: 'var(--text-muted)'}}>No recent approvals.</p>}
+                </>
+              )}
+
+              {user.role === 'vendor' && (
+                <>
+                  {stats.recentBids && stats.recentBids.map((bid, idx) => (
+                    <div key={`bid-${idx}`} style={{ fontSize: '0.825rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontWeight: '600', color: 'var(--primary)' }}>{bid.rfq?.title || 'Quotation Submitted'}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(bid.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ color: 'var(--text-main)' }}>Status: <span className={`status-pill ${bid.status}`}>{bid.status}</span></span>
+                        <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>₹{parseFloat(bid.price).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {stats.recentInvoices && stats.recentInvoices.map((inv, idx) => (
+                    <div key={`inv-${idx}`} style={{ fontSize: '0.825rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontWeight: '600', color: 'var(--success)' }}>Invoice: {inv.invoiceNumber}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(inv.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ color: 'var(--text-main)' }}>Status: <span className={`status-pill ${inv.status}`}>{inv.status}</span></span>
+                        <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>₹{parseFloat(inv.totalAmount).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(!stats.recentBids?.length && !stats.recentInvoices?.length) && <p style={{color: 'var(--text-muted)'}}>No recent bids or invoices.</p>}
+                </>
+              )}
+
             </div>
           </div>
         </div>

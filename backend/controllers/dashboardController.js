@@ -1,5 +1,6 @@
 const { User, VendorProfile, RFQ, Quotation, PurchaseOrder, Invoice, ActivityLog, Approval } = require('../models');
 const { Op } = require('sequelize');
+const sequelize = require('../config/db');
 
 exports.getStats = async (req, res) => {
   try {
@@ -15,12 +16,26 @@ exports.getStats = async (req, res) => {
       const invoicesPaid = await Invoice.findAll({ where: { status: 'paid' } });
       stats.totalSpend = invoicesPaid.reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
 
-      // Fetch all activity logs
       stats.recentActivities = await ActivityLog.findAll({
         include: [{ model: User, as: 'user', attributes: ['name', 'email'] }],
         order: [['createdAt', 'DESC']],
         limit: 10
       });
+
+      const avgRatingObj = await VendorProfile.findOne({
+        attributes: [
+          [sequelize.fn('AVG', sequelize.cast(sequelize.col('rating'), 'FLOAT')), 'avgRating']
+        ],
+        where: { ratingCount: { [Op.gt]: 0 } }
+      });
+      
+      const poTotal = await PurchaseOrder.count();
+      const poSuccess = await PurchaseOrder.count({ where: { status: { [Op.in]: ['accepted', 'delivered'] } } });
+      
+      stats.vendorPerformance = {
+        poSuccessRate: poTotal > 0 ? Math.round((poSuccess / poTotal) * 100) : 100,
+        averageRating: avgRatingObj && avgRatingObj.dataValues.avgRating ? parseFloat(avgRatingObj.dataValues.avgRating).toFixed(1) : 'N/A'
+      };
       
     } else if (role === 'procurement') {
       stats.activeRFQs = await RFQ.count({ where: { status: 'open' } });

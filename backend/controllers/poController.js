@@ -1,4 +1,4 @@
-const { PurchaseOrder, RFQ, VendorProfile, Quotation, User, Approval, ActivityLog, Notification } = require('../models');
+const { PurchaseOrder, RFQ, VendorProfile, Quotation, User, Approval, ActivityLog, Notification, GRN } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getPOs = async (req, res) => {
@@ -176,3 +176,63 @@ exports.generatePO = async (req, res) => {
     res.status(500).json({ message: 'Failed to generate Purchase Order' });
   }
 };
+
+exports.createGRN = async (req, res) => {
+  try {
+    const { id } = req.params; // PO ID
+    const { receivedQuantity, condition, remarks, vendorRating } = req.body;
+
+    const po = await PurchaseOrder.findByPk(id, {
+      include: [{ model: VendorProfile, as: 'vendor' }]
+    });
+
+    if (!po) {
+      return res.status(404).json({ message: 'Purchase Order not found' });
+    }
+
+    const grn = await GRN.create({
+      poId: id,
+      receivedQuantity,
+      condition,
+      remarks,
+      receivedBy: req.user.id
+    });
+
+    // Update Vendor Rating if provided
+    if (vendorRating && vendorRating >= 1 && vendorRating <= 5) {
+      const vendor = po.vendor;
+      // Simple moving average calculation logic
+      const newTotal = (parseFloat(vendor.rating) * vendor.ratingCount) + parseFloat(vendorRating);
+      vendor.ratingCount += 1;
+      vendor.rating = (newTotal / vendor.ratingCount).toFixed(1);
+      await vendor.save();
+    }
+
+    po.status = 'delivered'; // Optional state update
+    await po.save();
+
+    await ActivityLog.create({
+      userId: req.user.id,
+      action: 'GRN_CREATED',
+      details: `Goods Receipt Note created for PO ${po.poNumber}`
+    });
+
+    // Notify Vendor
+    const notif = await Notification.create({
+      userId: po.vendor.userId,
+      message: `Goods Receipt Note (GRN) created for your PO ${po.poNumber}.`,
+      type: 'info'
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(po.vendor.userId.toString()).emit('notification', notif);
+    }
+
+    res.status(201).json({ message: 'GRN created successfully', grn });
+  } catch (error) {
+    console.error('Create GRN Error:', error);
+    res.status(500).json({ message: 'Failed to create Goods Receipt Note' });
+  }
+};
+

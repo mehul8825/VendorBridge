@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import {
   ClipboardList, Printer, CheckCircle2, XCircle,
-  FilePlus, ChevronRight, Package, X, Hash, Calendar
+  FilePlus, ChevronRight, Package, X, Hash, Calendar, Download
 } from 'lucide-react';
 
 export default function PurchaseOrders({ user }) {
@@ -91,6 +91,30 @@ export default function PurchaseOrders({ user }) {
       alert(err.message || 'Failed to update PO status');
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    const element = document.querySelector('.doc-sheet');
+    if (!element) return;
+    
+    const opt = {
+      margin: 0.5,
+      filename: `PO_${selectedPo?.poNumber}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    if (window.html2pdf) {
+      window.html2pdf().set(opt).from(element).save();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = () => {
+        window.html2pdf().set(opt).from(element).save();
+      };
+      document.body.appendChild(script);
     }
   };
 
@@ -249,6 +273,9 @@ export default function PurchaseOrders({ user }) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', borderBottom: '1px solid var(--panel-border)', paddingBottom: '1rem' }}>
                 <button onClick={() => window.print()} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
                   <Printer size={14} /> Print Document
+                </button>
+                <button onClick={handleDownloadPDF} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                  <Download size={14} /> Download PDF
                 </button>
 
                 {user.role === 'vendor' && selectedPo.status === 'approved' && (

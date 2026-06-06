@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import Sidebar from './components/Sidebar';
 import Auth from './pages/Auth';
 import Onboarding from './pages/Onboarding';
@@ -104,10 +105,43 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  const handleMarkNotificationRead = async (id) => {
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '/';
+      const newSocket = io(socketUrl);
+
+      newSocket.on('connect', () => {
+        newSocket.emit('join', user.id);
+      });
+
+      newSocket.on('notification', (notif) => {
+        setNotifications(prev => [notif, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
+
+      return () => newSocket.close();
+    }
+  }, [isAuthenticated, user]);
+
+  const handleMarkNotificationRead = async (id, message) => {
     try {
       await api.put(`/auth/notifications/${id}/read`);
       fetchNotifications();
+      
+      // Auto-navigate based on notification context
+      if (message) {
+        const msg = message.toLowerCase();
+        if (msg.includes('approval') || msg.includes('manager')) {
+          setActiveTab('approvals');
+        } else if (msg.includes('invoice')) {
+          setActiveTab('invoices');
+        } else if (msg.includes('purchase order') || msg.includes('po-')) {
+          setActiveTab('pos');
+        } else if (msg.includes('rfq') || msg.includes('quotation') || msg.includes('bid')) {
+          setActiveTab('rfqs');
+        }
+        setShowNotifications(false); // Close panel after click
+      }
     } catch (err) {
       console.log(err);
     }
@@ -284,7 +318,7 @@ export default function App() {
                       notifications.map(notif => (
                         <div 
                           key={notif.id}
-                          onClick={() => handleMarkNotificationRead(notif.id)}
+                          onClick={() => handleMarkNotificationRead(notif.id, notif.message)}
                           style={{
                             fontSize: '0.8rem', padding: '0.5rem', borderRadius: '6px',
                             background: notif.isRead ? 'transparent' : 'rgba(0,0,0,0.02)',

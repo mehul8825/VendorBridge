@@ -2,10 +2,36 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const db = require('./models');
 const apiRoutes = require('./routes/api');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  }
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('User connected via Socket.io:', socket.id);
+  
+  socket.on('join', (userId) => {
+    socket.join(userId.toString());
+    console.log(`Socket ${socket.id} joined room ${userId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -45,8 +71,12 @@ const startServer = async () => {
     await db.sequelize.sync();
     console.log('Database synced successfully.');
 
+    // Initialize cron jobs
+    const initCronJobs = require('./scripts/cronJobs');
+    initCronJobs(io);
+
     // Start listening
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`===================================================`);
       console.log(`  VendorBridge ERP Server running on port ${PORT}`);
       console.log(`  Database Dialect: ${db.sequelize.dialect.name}`);

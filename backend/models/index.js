@@ -9,6 +9,8 @@ const PurchaseOrder = require('./purchaseOrder');
 const Invoice = require('./invoice');
 const ActivityLog = require('./activityLog');
 const Notification = require('./notification');
+const GRN = require('./grn');
+const RFQMessage = require('./rfqMessage');
 
 // User <-> VendorProfile
 User.hasOne(VendorProfile, { foreignKey: 'userId', as: 'vendorProfile', onDelete: 'CASCADE' });
@@ -56,6 +58,16 @@ Invoice.belongsTo(VendorProfile, { foreignKey: 'vendorId', as: 'vendor' });
 PurchaseOrder.hasOne(Invoice, { foreignKey: 'poId', as: 'invoice' });
 VendorProfile.hasMany(Invoice, { foreignKey: 'vendorId', as: 'invoices' });
 
+// GRN relations
+PurchaseOrder.hasOne(GRN, { foreignKey: 'poId', as: 'grn' });
+GRN.belongsTo(PurchaseOrder, { foreignKey: 'poId', as: 'purchaseOrder' });
+GRN.belongsTo(User, { foreignKey: 'receivedBy', as: 'receiver' });
+
+// RFQMessage relations
+RFQ.hasMany(RFQMessage, { foreignKey: 'rfqId', as: 'messages', onDelete: 'CASCADE' });
+RFQMessage.belongsTo(RFQ, { foreignKey: 'rfqId', as: 'rfq' });
+RFQMessage.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
+
 // Approval relations (polymorphic logs linked manually or conceptually)
 Approval.belongsTo(User, { foreignKey: 'managerId', as: 'manager' });
 
@@ -70,7 +82,9 @@ const db = {
   PurchaseOrder,
   Invoice,
   ActivityLog,
-  Notification
+  Notification,
+  GRN,
+  RFQMessage
 };
 
 module.exports = db;

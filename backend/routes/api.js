@@ -33,6 +33,8 @@ router.get('/rfqs', protect, rfqController.getRFQs);
 router.get('/rfqs/:id', protect, rfqController.getRFQById);
 router.get('/rfqs/:id/compare', protect, authorize('procurement', 'admin', 'manager'), rfqController.getBidsComparison);
 router.put('/rfqs/:id/close', protect, authorize('procurement', 'admin'), rfqController.closeRFQ);
+router.get('/rfqs/:id/messages', protect, rfqController.getRFQMessages);
+router.post('/rfqs/:id/messages', protect, rfqController.postRFQMessage);
 
 // --- QUOTATIONS (BIDS) ---
 router.post('/quotations', protect, authorize('vendor'), quotationController.submitQuotation);
@@ -50,6 +52,7 @@ router.get('/pos', protect, poController.getPOs);
 router.post('/pos', protect, authorize('procurement', 'admin'), poController.generatePO);
 router.get('/pos/:id', protect, poController.getPOById);
 router.put('/pos/:id/status', protect, authorize('vendor'), poController.updatePOStatus);
+router.post('/pos/:id/grn', protect, authorize('procurement', 'admin'), poController.createGRN);
 
 // --- INVOICES ---
 router.post('/invoices/generate', protect, authorize('vendor', 'procurement', 'admin'), invoiceController.generateInvoice);
