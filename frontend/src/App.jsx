@@ -105,25 +105,7 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '/';
-      const newSocket = io(socketUrl);
-
-      newSocket.on('connect', () => {
-        newSocket.emit('join', user.id);
-      });
-
-      newSocket.on('notification', (notif) => {
-        setNotifications(prev => [notif, ...prev]);
-        setUnreadCount(prev => prev + 1);
-      });
-
-      return () => newSocket.close();
-    }
-  }, [isAuthenticated, user]);
-
-  const handleMarkNotificationRead = async (id, message) => {
+  const handleMarkNotificationRead = async (id) => {
     try {
       await api.put(`/auth/notifications/${id}/read`);
       fetchNotifications();
