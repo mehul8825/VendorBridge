@@ -38,6 +38,7 @@ router.put('/rfqs/:id/close', protect, authorize('procurement', 'admin'), rfqCon
 router.post('/quotations', protect, authorize('vendor'), quotationController.submitQuotation);
 router.put('/quotations/:id', protect, authorize('vendor'), quotationController.updateQuotation);
 router.get('/quotations/my', protect, authorize('vendor'), quotationController.getMyQuotations);
+router.get('/quotations/pending-po', protect, authorize('procurement', 'admin'), quotationController.getApprovedPendingPO);
 
 // --- APPROVALS ---
 router.post('/approvals/initiate', protect, authorize('procurement', 'admin'), approvalController.initiateApproval);
@@ -46,6 +47,7 @@ router.put('/approvals/:id/review', protect, authorize('manager', 'admin'), appr
 
 // --- PURCHASE ORDERS ---
 router.get('/pos', protect, poController.getPOs);
+router.post('/pos', protect, authorize('procurement', 'admin'), poController.generatePO);
 router.get('/pos/:id', protect, poController.getPOById);
 router.put('/pos/:id/status', protect, authorize('vendor'), poController.updatePOStatus);
 

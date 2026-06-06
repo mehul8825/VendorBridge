@@ -1,4 +1,4 @@
-const { Quotation, RFQ, VendorProfile, ActivityLog, Notification } = require('../models');
+const { Quotation, RFQ, VendorProfile, PurchaseOrder, ActivityLog, Notification } = require('../models');
 
 exports.submitQuotation = async (req, res) => {
   try {
@@ -121,5 +121,25 @@ exports.getMyQuotations = async (req, res) => {
     res.json(quotations);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch quotations' });
+  }
+};
+
+exports.getApprovedPendingPO = async (req, res) => {
+  try {
+    const quotations = await Quotation.findAll({
+      where: { status: 'accepted' },
+      include: [
+        { model: RFQ, as: 'rfq' },
+        { model: VendorProfile, as: 'vendor' },
+        { model: PurchaseOrder, as: 'purchaseOrder', required: false }
+      ]
+    });
+    
+    // Filter out quotations that already have POs
+    const pending = quotations.filter(q => !q.purchaseOrder);
+    res.json(pending);
+  } catch (error) {
+    console.error('Fetch Pending PO Bids Error:', error);
+    res.status(500).json({ message: 'Failed to fetch pending PO bids' });
   }
 };

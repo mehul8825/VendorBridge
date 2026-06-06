@@ -7,6 +7,10 @@ export default function PurchaseOrders({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Pending PO quotes state
+  const [approvedQuotes, setApprovedQuotes] = useState([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+
   // Selected PO for detail/print view
   const [selectedPo, setSelectedPo] = useState(null);
   const [poDetailLoading, setPoDetailLoading] = useState(false);
@@ -24,8 +28,33 @@ export default function PurchaseOrders({ user }) {
     }
   };
 
+  const fetchApprovedQuotes = async () => {
+    if (user.role !== 'procurement' && user.role !== 'admin') return;
+    setQuotesLoading(true);
+    try {
+      const data = await api.get('/quotations/pending-po');
+      setApprovedQuotes(data);
+    } catch (err) {
+      console.log('Failed to fetch pending PO quotes:', err);
+    } finally {
+      setQuotesLoading(false);
+    }
+  };
+
+  const handleGeneratePOManually = async (quotationId) => {
+    try {
+      const po = await api.post('/pos', { quotationId });
+      alert(`Purchase Order ${po.poNumber} generated successfully!`);
+      fetchPOs();
+      fetchApprovedQuotes();
+    } catch (err) {
+      alert(err.message || 'Failed to generate Purchase Order');
+    }
+  };
+
   useEffect(() => {
     fetchPOs();
+    fetchApprovedQuotes();
   }, []);
 
   const handleSelectPo = async (id) => {
@@ -85,6 +114,39 @@ export default function PurchaseOrders({ user }) {
       <div className="dashboard-grid">
         {/* Left Side: PO Feed */}
         <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Approved Quotations awaiting PO generation */}
+          {(user.role === 'procurement' || user.role === 'admin') && (
+            <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--panel-border)', paddingBottom: '1.5rem' }}>
+              <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: '0.95rem', marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ClipboardList size={16} /> Approved Quotes Pending PO Release ({approvedQuotes.length})
+              </h4>
+              {quotesLoading ? (
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Checking approved list...</div>
+              ) : approvedQuotes.length === 0 ? (
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No quotations awaiting PO release.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {approvedQuotes.map(quote => (
+                    <div key={quote.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '8px', fontSize: '0.8rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxWidth: '65%' }}>
+                        <span style={{ fontWeight: '600', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{quote.vendor?.companyName}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Project: {quote.rfq?.title}</span>
+                        <span style={{ color: 'var(--primary)', fontWeight: '600' }}>Value: ₹{parseFloat(quote.price).toLocaleString('en-IN')}</span>
+                      </div>
+                      <button
+                        onClick={() => handleGeneratePOManually(quote.id)}
+                        className="btn btn-primary"
+                        style={{ padding: '0.35rem 0.7rem', fontSize: '0.75rem' }}
+                      >
+                        Generate PO
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem' }}>Release PO Registry</h3>
           
           {loading ? (

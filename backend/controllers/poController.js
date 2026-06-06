@@ -104,3 +104,60 @@ exports.updatePOStatus = async (req, res) => {
     res.status(500).json({ message: 'Failed to update Purchase Order' });
   }
 };
+
+exports.generatePO = async (req, res) => {
+  try {
+    const { quotationId } = req.body;
+    if (!quotationId) {
+      return res.status(400).json({ message: 'Quotation ID is required' });
+    }
+    
+    // Verify quotation is approved/accepted and doesn't already have a PO
+    const quote = await Quotation.findByPk(quotationId, {
+      include: [{ model: RFQ, as: 'rfq' }, { model: VendorProfile, as: 'vendor' }]
+    });
+    if (!quote) {
+      return res.status(404).json({ message: 'Quotation not found' });
+    }
+    if (quote.status !== 'accepted') {
+      return res.status(400).json({ message: 'Quotation must be accepted/approved before releasing a PO.' });
+    }
+
+    const existingPO = await PurchaseOrder.findOne({ where: { quotationId } });
+    if (existingPO) {
+      return res.status(400).json({ message: 'A Purchase Order has already been generated for this quotation.' });
+    }
+
+    // Generate PO number
+    const poCount = await PurchaseOrder.count();
+    const poNumber = `PO-${new Date().getFullYear()}-${String(poCount + 1).padStart(4, '0')}`;
+
+    const po = await PurchaseOrder.create({
+      poNumber,
+      rfqId: quote.rfqId,
+      vendorId: quote.vendorId,
+      quotationId: quote.id,
+      totalAmount: quote.price,
+      status: 'approved' // Automatically approved since it came from approved quote
+    });
+
+    // Create activity log
+    await ActivityLog.create({
+      userId: req.user.id,
+      action: 'PO_GENERATED',
+      details: `Procurement Officer generated PO ${poNumber} for quotation #${quote.id} and vendor '${quote.vendor.companyName}'`
+    });
+
+    // Notify vendor
+    await Notification.create({
+      userId: quote.vendor.userId,
+      message: `Purchase Order ${poNumber} has been generated and released for your bid on "${quote.rfq.title}".`,
+      type: 'info'
+    });
+
+    res.status(201).json(po);
+  } catch (error) {
+    console.error('Generate PO Error:', error);
+    res.status(500).json({ message: 'Failed to generate Purchase Order' });
+  }
+};
