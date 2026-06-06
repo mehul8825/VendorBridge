@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
 import Sidebar from './components/Sidebar';
 import Auth from './pages/Auth';
 import Onboarding from './pages/Onboarding';
