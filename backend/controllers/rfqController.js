@@ -163,7 +163,7 @@ exports.getRFQById = async (req, res) => {
 
 exports.getBidsComparison = async (req, res) => {
   try {
-    const { id } = req.params; // RFQ ID
+    const { id } = req.params;
     const rfq = await RFQ.findByPk(id, {
       include: [
         {
@@ -174,9 +174,7 @@ exports.getBidsComparison = async (req, res) => {
       ]
     });
 
-    if (!rfq) {
-      return res.status(404).json({ message: 'RFQ not found' });
-    }
+    if (!rfq) return res.status(404).json({ message: 'RFQ not found' });
 
     if (req.user.role === 'vendor') {
       return res.status(403).json({ message: 'Vendors are not allowed to view the bid comparison board.' });
@@ -184,41 +182,105 @@ exports.getBidsComparison = async (req, res) => {
 
     const quotations = rfq.quotations || [];
 
-    // Calculate details for comparison
-    if (quotations.length > 0) {
-      const prices = quotations.map(q => parseFloat(q.price));
-      const deliveryTimes = quotations.map(q => q.deliveryDays);
-
-      const lowestPrice = Math.min(...prices);
-      const fastestDelivery = Math.min(...deliveryTimes);
-
-      // Enhance the response
-      const comparedBids = quotations.map(q => {
-        const quoteObj = q.toJSON();
-        quoteObj.isLowestPrice = parseFloat(q.price) === lowestPrice;
-        quoteObj.isFastestDelivery = q.deliveryDays === fastestDelivery;
-        return quoteObj;
-      });
-
-      return res.json({
-        rfq,
-        bids: comparedBids,
-        lowestPrice,
-        fastestDelivery
-      });
+    if (quotations.length === 0) {
+      return res.json({ rfq, bids: [], lowestPrice: 0, fastestDelivery: 0 });
     }
+
+    // ── Raw metrics ──────────────────────────────────────────────────────
+    const prices        = quotations.map(q => parseFloat(q.price));
+    const deliveryTimes = quotations.map(q => parseInt(q.deliveryDays, 10));
+    const ratings       = quotations.map(q => parseFloat(q.vendor?.rating || 3));
+    const budget        = parseFloat(rfq.targetBudget);
+
+    const lowestPrice     = Math.min(...prices);
+    const highestPrice    = Math.max(...prices);
+    const fastestDelivery = Math.min(...deliveryTimes);
+    const slowestDelivery = Math.max(...deliveryTimes);
+    const highestRating   = Math.max(...ratings);
+
+    // ── Scoring weights (total = 100) ────────────────────────────────────
+    // 1. Price Score       (35%) — lower price = higher score
+    // 2. Delivery Score    (25%) — faster delivery = higher score
+    // 3. Vendor Rating     (20%) — higher rating = higher score
+    // 4. Response Quality  (12%) — detail/completeness of bid notes
+    // 5. Budget Compliance (8%)  — whether bid is within target budget
+
+    const scoreBid = (q) => {
+      const price    = parseFloat(q.price);
+      const delivery = parseInt(q.deliveryDays, 10);
+      const rating   = parseFloat(q.vendor?.rating || 3);
+      const notes    = (q.notes || '').trim();
+
+      // 1. Price score (35) — normalized: lowest gets 35, highest gets 0
+      const priceRange = highestPrice - lowestPrice || 1;
+      const priceScore = ((highestPrice - price) / priceRange) * 35;
+
+      // 2. Delivery score (25)
+      const delivRange = slowestDelivery - fastestDelivery || 1;
+      const delivScore = ((slowestDelivery - delivery) / delivRange) * 25;
+
+      // 3. Vendor rating (20) — 5-star max
+      const ratingScore = (rating / 5) * 20;
+
+      // 4. Response quality (12)
+      //    Criteria: notes length (>80 chars), mentions price/timeline/warranty/insurance keywords
+      const keywords   = ['warranty', 'insurance', 'delivery', 'quality', 'certified', 'gst', 'tracking', 'stock', 'commercial', 'guarantee'];
+      const wordHits   = keywords.filter(k => notes.toLowerCase().includes(k)).length;
+      const lengthPts  = Math.min(notes.length / 80, 1) * 6;   // up to 6pts for length
+      const keywordPts = Math.min(wordHits / 3, 1) * 6;        // up to 6pts for keywords
+      const qualityScore = lengthPts + keywordPts;
+
+      // 5. Budget compliance (8)
+      const complianceScore = price <= budget ? 8 : Math.max(0, 8 - ((price - budget) / budget) * 8);
+
+      const total = priceScore + delivScore + ratingScore + qualityScore + complianceScore;
+
+      return {
+        priceScore:      Math.round(priceScore * 10) / 10,
+        deliveryScore:   Math.round(delivScore * 10) / 10,
+        ratingScore:     Math.round(ratingScore * 10) / 10,
+        qualityScore:    Math.round(qualityScore * 10) / 10,
+        complianceScore: Math.round(complianceScore * 10) / 10,
+        totalScore:      Math.round(total * 10) / 10,
+        // Human-readable detail
+        budgetCompliant: price <= budget,
+        priceDiff:       price - budget,
+        responseDetail: {
+          wordCount:  notes.split(/\s+/).filter(Boolean).length,
+          charCount:  notes.length,
+          keywordsHit: keywords.filter(k => notes.toLowerCase().includes(k)),
+        }
+      };
+    };
+
+    const scored = quotations.map(q => {
+      const quoteObj = q.toJSON();
+      const scores   = scoreBid(q);
+      return {
+        ...quoteObj,
+        isLowestPrice:    parseFloat(q.price) === lowestPrice,
+        isFastestDelivery: parseInt(q.deliveryDays, 10) === fastestDelivery,
+        scores
+      };
+    });
+
+    // Sort by totalScore desc, attach rank
+    scored.sort((a, b) => b.scores.totalScore - a.scores.totalScore);
+    scored.forEach((b, i) => { b.rank = i + 1; });
 
     res.json({
       rfq,
-      bids: [],
-      lowestPrice: 0,
-      fastestDelivery: 0
+      bids: scored,
+      lowestPrice,
+      fastestDelivery,
+      weights: { price: 35, delivery: 25, rating: 20, quality: 12, compliance: 8 }
     });
   } catch (error) {
     console.error('Compare Bids Error:', error);
     res.status(500).json({ message: 'Failed to compare bids' });
   }
 };
+
 
 exports.closeRFQ = async (req, res) => {
   try {
