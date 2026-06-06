@@ -126,19 +126,31 @@ h1, h2, h3, h4, h5, h6 {
 
 .main-content {
   flex: 1;
-  padding: 2rem 3rem;
-  overflow-y: auto;
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  height: 100vh;
+  overflow: hidden;
   background: var(--bg-color);
 }
 
-/* Header Spacer */
-header {
+.top-bar {
+  height: 64px;
+  background: var(--panel-bg);
   border-bottom: 1px solid var(--panel-border);
-  padding-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  z-index: 90;
+}
+
+.content-body {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Buttons (Premium Flat Layout) */

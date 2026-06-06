@@ -154,86 +154,104 @@ export default function App() {
 
       {/* Main Panel */}
       <main className="main-content">
-        {/* Top Header Workspace */}
-        <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1.5rem', position: 'relative' }}>
-          
-          {/* Light/Dark Toggle */}
-          <button 
-            onClick={toggleTheme} 
-            className="btn btn-secondary" 
-            style={{ borderRadius: '50%', padding: '0.6rem', width: '38px', height: '38px' }}
-            title={isDarkTheme ? "Switch to Light Theme" : "Switch to Dark Theme"}
-          >
-            {isDarkTheme ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+        {/* Top Header Bar */}
+        <div className="top-bar">
+          <h2 style={{ fontSize: '1.15rem', fontWeight: '600', color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
+            {(() => {
+              switch (activeTab) {
+                case 'dashboard': return 'Dashboard Overview';
+                case 'onboarding': return 'Vendor Onboarding';
+                case 'vendors': return 'Vendor Registry';
+                case 'rfqs': return 'Requests for Quotations';
+                case 'compare': return 'Bid Evaluation Board';
+                case 'approvals': return 'Workflow Sign-offs';
+                case 'pos': return 'Purchase Orders';
+                case 'invoices': return 'Invoicing & Payments';
+                case 'logs': return 'Audit Logs & Analytics';
+                default: return 'VendorBridge ERP';
+              }
+            })()}
+          </h2>
 
-          {/* Notifications Center */}
-          <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            {/* Light/Dark Toggle */}
             <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="btn btn-secondary"
-              style={{ borderRadius: '50%', padding: '0.6rem', width: '38px', height: '38px', position: 'relative' }}
-              title="Notifications Panel"
+              onClick={toggleTheme} 
+              className="btn btn-secondary" 
+              style={{ borderRadius: '50%', padding: '0.6rem', width: '38px', height: '38px' }}
+              title={isDarkTheme ? "Switch to Light Theme" : "Switch to Dark Theme"}
             >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: '-4px', right: '-4px',
-                  background: 'var(--error)', color: '#fff', fontSize: '0.65rem',
-                  fontWeight: '700', padding: '2px 5px', borderRadius: '99px',
-                  boxShadow: '0 0 8px var(--error-glow)'
-                }}>
-                  {unreadCount}
-                </span>
-              )}
+              {isDarkTheme ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            {showNotifications && (
-              <div 
-                className="glass-panel" 
-                style={{
-                  position: 'absolute', top: '48px', right: '0',
-                  width: '320px', maxHeight: '400px', overflowY: 'auto',
-                  zIndex: 200, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem'
-                }}
+            {/* Notifications Center */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="btn btn-secondary"
+                style={{ borderRadius: '50%', padding: '0.6rem', width: '38px', height: '38px', position: 'relative' }}
+                title="Notifications Panel"
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '0.5rem' }}>
-                  <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Notifications Center</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({unreadCount} unread)</span>
-                </div>
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-4px', right: '-4px',
+                    background: 'var(--error)', color: '#fff', fontSize: '0.65rem',
+                    fontWeight: '700', padding: '2px 5px', borderRadius: '99px',
+                    boxShadow: '0 0 8px var(--error-glow)'
+                  }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {notifications.length === 0 ? (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '1rem 0', textAlign: 'center' }}>
-                      No notifications yet.
-                    </div>
-                  ) : (
-                    notifications.map(notif => (
-                      <div 
-                        key={notif.id}
-                        onClick={() => handleMarkNotificationRead(notif.id)}
-                        style={{
-                          fontSize: '0.8rem', padding: '0.5rem', borderRadius: '6px',
-                          background: notif.isRead ? 'transparent' : 'rgba(255,255,255,0.02)',
-                          borderLeft: notif.isRead ? 'none' : '3px solid var(--primary)',
-                          cursor: 'pointer', transition: 'var(--transition)'
-                        }}
-                      >
-                        <p style={{ color: notif.isRead ? 'var(--text-secondary)' : '#fff' }}>{notif.message}</p>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                          {new Date(notif.createdAt).toLocaleDateString()}
-                        </span>
+              {showNotifications && (
+                <div 
+                  className="glass-panel" 
+                  style={{
+                    position: 'absolute', top: '48px', right: '0',
+                    width: '320px', maxHeight: '400px', overflowY: 'auto',
+                    zIndex: 200, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '0.5rem' }}>
+                    <span style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-main)' }}>Notifications</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({unreadCount} unread)</span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '1rem 0', textAlign: 'center' }}>
+                        No notifications yet.
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      notifications.map(notif => (
+                        <div 
+                          key={notif.id}
+                          onClick={() => handleMarkNotificationRead(notif.id)}
+                          style={{
+                            fontSize: '0.8rem', padding: '0.5rem', borderRadius: '6px',
+                            background: notif.isRead ? 'transparent' : 'rgba(0,0,0,0.02)',
+                            borderLeft: notif.isRead ? 'none' : '3px solid var(--primary)',
+                            cursor: 'pointer', transition: 'var(--transition)'
+                          }}
+                        >
+                          <p style={{ color: notif.isRead ? 'var(--text-secondary)' : 'var(--text-main)', margin: 0 }}>{notif.message}</p>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            {new Date(notif.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </header>
+        </div>
 
-        {/* Dynamic Workspace */}
-        <div style={{ flex: 1 }}>
+        {/* Scrollable Dynamic Workspace Body */}
+        <div className="content-body">
           {renderContent()}
         </div>
       </main>
