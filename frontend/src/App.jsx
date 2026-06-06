@@ -18,7 +18,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [comparisonRfqId, setComparisonRfqId] = useState(null);
-  const [isLightTheme, setIsLightTheme] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   // Notifications
   const [notifications, setNotifications] = useState([]);
@@ -84,12 +84,12 @@ export default function App() {
   };
 
   const toggleTheme = () => {
-    setIsLightTheme(prev => {
+    setIsDarkTheme(prev => {
       const next = !prev;
       if (next) {
-        document.body.classList.add('light-theme');
+        document.body.classList.add('dark-theme');
       } else {
-        document.body.classList.remove('light-theme');
+        document.body.classList.remove('dark-theme');
       }
       return next;
     });
@@ -162,9 +162,9 @@ export default function App() {
             onClick={toggleTheme} 
             className="btn btn-secondary" 
             style={{ borderRadius: '50%', padding: '0.6rem', width: '38px', height: '38px' }}
-            title={isLightTheme ? "Switch to Dark Theme" : "Switch to Light Theme"}
+            title={isDarkTheme ? "Switch to Light Theme" : "Switch to Dark Theme"}
           >
-            {isLightTheme ? <Moon size={18} /> : <Sun size={18} />}
+            {isDarkTheme ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
           {/* Notifications Center */}

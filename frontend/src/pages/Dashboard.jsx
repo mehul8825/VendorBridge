@@ -172,7 +172,7 @@ export default function Dashboard({ user, setActiveTab, setComparisonRfqId }) {
             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
               <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: colors[idx % colors.length] }} />
               <span style={{ color: 'var(--text-secondary)' }}>{item.name}:</span>
-              <span style={{ fontWeight: '600' }}>{item.value} ({Math.round(percentage = (item.value/total)*100)}%)</span>
+              <span style={{ fontWeight: '600' }}>{item.value} ({Math.round((item.value / total) * 100)}%)</span>
             </div>
           ))}
         </div>
