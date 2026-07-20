@@ -37,6 +37,11 @@ const VendorProfile = sequelize.define('VendorProfile', {
     allowNull: false,
     defaultValue: 5.0
   },
+  ratingCount: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1
+  },
   status: {
     type: DataTypes.ENUM('pending', 'approved', 'rejected'),
     allowNull: false,
