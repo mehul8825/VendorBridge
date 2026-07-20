@@ -11,7 +11,11 @@ const approvalController = require('../controllers/approvalController');
 const poController = require('../controllers/poController');
 const invoiceController = require('../controllers/invoiceController');
 const dashboardController = require('../controllers/dashboardController');
+const demoController = require('../controllers/demoController');
 
+// --- DEMO / HACKATHON TOOLS ---
+router.post('/demo/reset', demoController.resetClean);
+router.post('/demo/fast-forward', demoController.fastForward);
 // --- AUTHENTICATION & USERS ---
 router.post('/auth/signup', authController.signup);
 router.post('/auth/login', authController.login);
@@ -44,7 +48,7 @@ router.get('/quotations/pending-po', protect, authorize('procurement', 'admin'),
 
 // --- APPROVALS ---
 router.post('/approvals/initiate', protect, authorize('procurement', 'admin'), approvalController.initiateApproval);
-router.get('/approvals', protect, authorize('manager', 'admin', 'procurement'), approvalController.getApprovals);
+router.get('/approvals', protect, authorize('manager', 'admin'), approvalController.getApprovals);
 router.put('/approvals/:id/review', protect, authorize('manager', 'admin'), approvalController.reviewApproval);
 
 // --- PURCHASE ORDERS ---

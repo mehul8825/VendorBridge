@@ -341,13 +341,15 @@ export default function Invoices({ user }) {
           <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-heading)' }}>Invoices &amp; Billing</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Review, approve, and track delivery invoices. Scan barcodes at delivery gates.</p>
         </div>
-        <button
-          onClick={() => setShowScanner(true)}
-          className="btn btn-secondary"
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '0.55rem 1rem' }}
-        >
-          <Scan size={16} /> Gate Scanner
-        </button>
+        {user.role !== 'vendor' && (
+          <button
+            onClick={() => setShowScanner(true)}
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '0.55rem 1rem' }}
+          >
+            <Scan size={16} /> Gate Scanner
+          </button>
+        )}
       </div>
 
       <div className="dashboard-grid">
@@ -430,7 +432,7 @@ export default function Invoices({ user }) {
                 )}
 
                 {/* Scan barcode button */}
-                {selectedInvoice.barcode && (
+                {selectedInvoice.barcode && user.role !== 'vendor' && (
                   <button onClick={() => setShowScanner(true)} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', borderColor: '#10b981', color: '#10b981' }}>
                     <Scan size={14} /> Scan Barcode
                   </button>
